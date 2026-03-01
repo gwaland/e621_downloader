@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-use std::fs::{read_to_string, write};
+use std::fs::{create_dir_all, read_to_string, write};
 use std::io;
-use std::path::Path;
+use std::path::PathBuf;
 use std::process::exit;
 
 use anyhow::Error;
@@ -26,6 +26,16 @@ use serde_json::{from_str, to_string_pretty};
 
 pub(crate) mod parser;
 pub(crate) mod tag;
+
+/// Returns the path to the app's config directory (`~/.config/e621_downloader/`),
+/// creating it if it doesn't exist.
+pub(crate) fn app_config_dir() -> PathBuf {
+    let dir = dirs::config_dir()
+        .expect("Unable to determine config directory")
+        .join("e621_downloader");
+    create_dir_all(&dir).expect("Unable to create config directory");
+    dir
+}
 
 /// Name of the configuration file.
 pub(crate) const CONFIG_NAME: &str = "config.json";
@@ -59,7 +69,7 @@ impl Config {
 
     /// Checks config and ensure it isn't missing.
     pub(crate) fn config_exists() -> bool {
-        if !Path::new(CONFIG_NAME).exists() {
+        if !app_config_dir().join(CONFIG_NAME).exists() {
             trace!("config.json: does not exist!");
             return false;
         }
@@ -70,7 +80,7 @@ impl Config {
     /// Creates config file.
     pub(crate) fn create_config() -> Result<(), Error> {
         let json = to_string_pretty(&Config::default())?;
-        write(Path::new(CONFIG_NAME), json)?;
+        write(app_config_dir().join(CONFIG_NAME), json)?;
 
         Ok(())
     }
@@ -82,7 +92,12 @@ impl Config {
 
     /// Loads and returns `config` for quick management and settings.
     fn get_config() -> Result<Self, Error> {
-        let mut config: Config = from_str(&read_to_string(CONFIG_NAME).unwrap())?;
+        let mut config: Config = from_str(&read_to_string(app_config_dir().join(CONFIG_NAME)).unwrap())?;
+        if let Some(rest) = config.download_directory.strip_prefix("~/") {
+            if let Some(home) = dirs::home_dir() {
+                config.download_directory = home.join(rest).to_string_lossy().into_owned();
+            }
+        }
         config.naming_convention = config.naming_convention.to_lowercase();
         let convention = ["md5", "id"];
         if !convention
@@ -157,7 +172,7 @@ impl Login {
     /// Loads the login file or creates one if it doesn't exist.
     fn load() -> Result<Self, Error> {
         let mut login = Login::default();
-        let login_path = Path::new(LOGIN_NAME);
+        let login_path = app_config_dir().join(LOGIN_NAME);
         if login_path.exists() {
             login = from_str(&read_to_string(login_path)?)?;
         } else {
@@ -178,7 +193,7 @@ impl Login {
 
     /// Creates a new login file.
     fn create_login(&self) -> Result<(), Error> {
-        write(LOGIN_NAME, to_string_pretty(self)?)?;
+        write(app_config_dir().join(LOGIN_NAME), to_string_pretty(self)?)?;
 
         info!("The login file was created.");
         info!(
