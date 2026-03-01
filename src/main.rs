@@ -28,6 +28,7 @@ use simplelog::{
     ColorChoice, CombinedLogger, Config, ConfigBuilder, TermLogger, TerminalMode, WriteLogger,
 };
 
+use crate::e621::io::app_config_dir;
 use crate::program::Program;
 
 mod e621;
@@ -56,7 +57,7 @@ fn initialize_logger() {
         WriteLogger::new(
             LevelFilter::max(),
             config.build(),
-            File::create("e621_downloader.log").unwrap(),
+            File::create(app_config_dir().join("e621_downloader.log")).unwrap(),
         ),
     ])
     .unwrap();

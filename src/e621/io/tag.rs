@@ -18,7 +18,7 @@ use std::fs::read_to_string;
 
 use anyhow::{Context, Error};
 
-use crate::e621::io::emergency_exit;
+use crate::e621::io::{app_config_dir, emergency_exit};
 use crate::e621::io::parser::BaseParser;
 use crate::e621::sender::entries::TagEntry;
 use crate::e621::sender::RequestSender;
@@ -135,7 +135,7 @@ impl Group {
 pub(crate) fn parse_tag_file(request_sender: &RequestSender) -> Result<Vec<Group>, Error> {
     TagParser {
         parser: BaseParser::new(
-            read_to_string(TAG_NAME)
+            read_to_string(app_config_dir().join(TAG_NAME))
                 .with_context(|| {
                     error!("Unable to read tag file!");
                     "Possible I/O block when trying to read tag file..."

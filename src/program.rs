@@ -16,13 +16,11 @@
 
 use std::env::current_dir;
 use std::fs::write;
-use std::path::Path;
-
 use console::Term;
 use anyhow::Error;
 
 use crate::e621::E621WebConnector;
-use crate::e621::io::{Config, emergency_exit, Login};
+use crate::e621::io::{app_config_dir, Config, emergency_exit, Login};
 use crate::e621::io::tag::{parse_tag_file, TAG_FILE_EXAMPLE, TAG_NAME};
 use crate::e621::sender::RequestSender;
 
@@ -69,9 +67,9 @@ impl Program {
 
         // Create tag if it doesn't exist.
         trace!("Checking if tag file exists...");
-        if !Path::new(TAG_NAME).exists() {
+        if !app_config_dir().join(TAG_NAME).exists() {
             info!("Tag file does not exist, creating tag file...");
-            write(TAG_NAME, TAG_FILE_EXAMPLE)?;
+            write(app_config_dir().join(TAG_NAME), TAG_FILE_EXAMPLE)?;
             trace!("Tag file \"{}\" created...", TAG_NAME);
 
             emergency_exit(
