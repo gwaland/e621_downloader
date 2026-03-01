@@ -93,6 +93,11 @@ impl Config {
     /// Loads and returns `config` for quick management and settings.
     fn get_config() -> Result<Self, Error> {
         let mut config: Config = from_str(&read_to_string(app_config_dir().join(CONFIG_NAME)).unwrap())?;
+        if let Some(rest) = config.download_directory.strip_prefix("~/") {
+            if let Some(home) = dirs::home_dir() {
+                config.download_directory = home.join(rest).to_string_lossy().into_owned();
+            }
+        }
         config.naming_convention = config.naming_convention.to_lowercase();
         let convention = ["md5", "id"];
         if !convention
